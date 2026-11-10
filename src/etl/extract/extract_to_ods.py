@@ -1,22 +1,21 @@
 """抽取（Extract）：多源异构数据 → ODS 层。
 
-- 文件数据源（data/csv 下的行为流水 CSV）用 Spark 直接读取
+- CSV 文件源：先上传 HDFS（流程），再用 Spark 从 HDFS 读取
 - 业务库源（MySQL 静态主数据）用 Spark JDBC 读取
 统一落地为 Hive ODS 层表（edu_dw.ods_<表名>）。
 
 供 etl.run_etl() 调用，不单独运行。
 """
 
-import os
-
 from src.config.db_config import MYSQL_JDBC_URL, MYSQL_PROPERTIES, MYSQL_TABLES
 from src.config.hdfs_config import HIVE_DB
-from src.config.project_config import CSV_DATA_DIR, CSV_TABLES
+from src.config.project_config import CSV_TABLES
+from src.utils.hdfs_utils import csv_hdfs_path, upload_csv_files_to_hdfs
 
 
 def load_csv_to_ods(spark, table):
-    """CSV 文件源 → ODS。"""
-    path = os.path.join(CSV_DATA_DIR, f"{table}.csv")
+    """CSV 文件源（HDFS）→ ODS。"""
+    path = csv_hdfs_path(table)
     df = (
         spark.read
         .option("header", "true")
@@ -40,6 +39,9 @@ def load_mysql_to_ods(spark, table):
 def run_extract(spark):
     """执行抽取：9 张源表全部落地 ODS 层。"""
     spark.sql(f"CREATE DATABASE IF NOT EXISTS {HIVE_DB}")
+
+    # 上传 CSV 行为流水到 HDFS
+    upload_csv_files_to_hdfs()
 
     for table in MYSQL_TABLES:
         load_mysql_to_ods(spark, table)
