@@ -3,9 +3,6 @@
 流程：
   1. load_mysql()  静态主数据导入 MySQL（pandas，非 Hadoop）
   2. run_etl()     上传 CSV 到 HDFS + 抽取 ODS + 清洗 DWD（Spark/Hadoop）
-
-运行（在 Hadoop 环境）：
-  spark-submit --jars mysql-connector-java.jar main.py
 """
 
 import os

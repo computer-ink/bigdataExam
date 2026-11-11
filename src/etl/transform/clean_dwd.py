@@ -5,6 +5,7 @@
 2. 按主键 id 去重
 3. 时间戳（unix 秒）统一转换为标准 datetime 字符串（*_dt 列）
 
+统一落地为 Hive DWD 外部表（edu_dw.dwd_<表名>，数据在 /user/edu_dw/dwd）。
 供 etl.run_etl() 调用，不单独运行。
 """
 
@@ -13,6 +14,7 @@ from pyspark.sql.functions import col, from_unixtime, when
 from src.config.db_config import MYSQL_TABLES
 from src.config.hdfs_config import HIVE_DB
 from src.config.project_config import CSV_TABLES
+from src.utils.spark_utils import save_to_layer
 
 # 每张表需要转换为标准时间的时间戳字段
 TIMESTAMP_COLS = {
@@ -51,7 +53,7 @@ def transform_table(spark, table):
         if ts in df.columns:
             df = df.withColumn(f"{ts}_dt", to_datetime(ts))
 
-    df.write.mode("overwrite").saveAsTable(f"{HIVE_DB}.dwd_{table}")
+    save_to_layer(spark, df, "dwd", f"dwd_{table}")
     print(f"[OK] {HIVE_DB}.ods_{table} -> {HIVE_DB}.dwd_{table}  ({df.count()} 行)")
 
 
